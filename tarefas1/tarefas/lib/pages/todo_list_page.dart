@@ -36,7 +36,9 @@ class _TodoListPageState extends State<TodoListPage> {
                             )),
                       ),
                     ),
-                    SizedBox(width: 8,),
+                    SizedBox(
+                      width: 8,
+                    ),
                     // Botão de adicionar nova tarefa.
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -47,12 +49,34 @@ class _TodoListPageState extends State<TodoListPage> {
                       child: Icon(
                         Icons.add,
                         size: 35,
-                        color: Colors.white ,
+                        color: Colors.white,
                       ),
-
                     ),
                   ],
                 ),
+                // Novas informações
+                // Texto contendo a quantidade de tarefas
+                // botão com o icone de lixeira
+                Row(children: [
+                  // Texto que mostra a quantidade de tarefas
+                  Text(
+                    'Você tem 0 tarefas adicionadas',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(width: 40),
+                  // Botão de lixeira
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_sweep,
+                      color: Colors.purple,
+                      size: 30,
+                    ),
+                    onPressed: () {},
+                  ),
+                ]),
               ],
             ),
           ),
