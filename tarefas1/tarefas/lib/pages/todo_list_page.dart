@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -54,6 +55,22 @@ class _TodoListPageState extends State<TodoListPage> {
                     ),
                   ],
                 ),
+                // Lugar da 
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      Text('Estudar'),
+                      Text("Fazer compras")
+                    ],
+                  ),
+                ),
+
+
+
+
+
+                //--------------
                 // Novas informações
                 // Texto contendo a quantidade de tarefas
                 // botão com o icone de lixeira
