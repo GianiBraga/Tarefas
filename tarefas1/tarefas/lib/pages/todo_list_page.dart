@@ -1,6 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:tarefas/models/todo.dart';
+import 'package:tarefas/repositories/todo_repository.dart';
+import 'package:tarefas/widgets/todo_list_item.dart';
 
 class TodoListPage extends StatefulWidget {
   const TodoListPage({super.key});
@@ -10,6 +13,36 @@ class TodoListPage extends StatefulWidget {
 }
 
 class _TodoListPageState extends State<TodoListPage> {
+  // Controller para o campo de texto onde o usuário
+  // vai inserir a nova tarefa
+  final TextEditingController todoControler = TextEditingController();
+
+  // Instância do repositório da persistência dos dados
+  final TodoRepository todoRepository = TodoRepository();
+
+  // Listar todas as tarefas
+  List<Todo> todos = [];
+
+  // Variáveis usadas para rastrear a tarefa
+  // que foi deletada temporariamente
+  Todo? deletedTodo;
+  int? deletedTodoPos;
+
+  // Texto de erro exibido se o campo
+  // estiver vazio
+  String? errorText;
+
+  // Carregar a lista de tarefas quando abre o app
+  @override
+  void initState() {
+    super.initState();
+    todoRepository.getTodoList().then((value) => {
+          setState(() {
+            todos = value;
+          })
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -25,10 +58,12 @@ class _TodoListPageState extends State<TodoListPage> {
                     // Campo para entrada de texto
                     Expanded(
                       child: TextField(
+                        controller: todoControler, //
                         decoration: InputDecoration(
                             border: OutlineInputBorder(),
                             labelText: 'Adicionar uma nova tarefa',
                             hintText: 'Ex. Estudar...',
+                            errorText: errorText, //
                             focusedBorder: OutlineInputBorder(
                               borderSide: BorderSide(
                                 color: Colors.purple,
@@ -46,7 +81,27 @@ class _TodoListPageState extends State<TodoListPage> {
                         backgroundColor: Colors.purple,
                         padding: EdgeInsets.all(10),
                       ),
-                      onPressed: () {},
+                      onPressed: () {
+                        String text = todoControler.text;
+
+                        if (text.isEmpty) {
+                          setState(() {
+                            errorText = 'O campo não pode ser vazio!';
+                          });
+                          return;
+                        }
+                        // Função para adicionar nova tarefa
+                        setState(() {
+                          Todo newTodo = Todo(
+                            title: text,
+                            dateTime: DateTime.now(),
+                          );
+                          todos.add(newTodo);
+                          errorText = null;
+                        });
+                        todoControler.clear();
+                        todoRepository.saveTodoList(todos);
+                      },
                       child: Icon(
                         Icons.add,
                         size: 35,
@@ -55,20 +110,19 @@ class _TodoListPageState extends State<TodoListPage> {
                     ),
                   ],
                 ),
-                // Lugar da 
+                // Lugar da
                 Flexible(
                   child: ListView(
                     shrinkWrap: true,
                     children: [
-                      Text('Estudar'),
-                      Text("Fazer compras")
+                      for (Todo todo in todos)
+                        TodoListItem(
+                          todo: todo,
+                          onDelete: onDelete,
+                        )
                     ],
                   ),
                 ),
-
-
-
-
 
                 //--------------
                 // Novas informações
@@ -77,7 +131,7 @@ class _TodoListPageState extends State<TodoListPage> {
                 Row(children: [
                   // Texto que mostra a quantidade de tarefas
                   Text(
-                    'Você tem 0 tarefas adicionadas',
+                    'Você tem ${todos.length} tarefas adicionadas',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -91,7 +145,7 @@ class _TodoListPageState extends State<TodoListPage> {
                       color: Colors.purple,
                       size: 30,
                     ),
-                    onPressed: () {},
+                    onPressed: showDeleteTodoConfirmationDialog,
                   ),
                 ]),
               ],
@@ -101,4 +155,84 @@ class _TodoListPageState extends State<TodoListPage> {
       ),
     );
   }
+
+  // função pra deletar uma tarefa
+  void onDelete(Todo todo) {
+    deletedTodo = todo;
+    deletedTodoPos = todos.indexOf(todo);
+    setState(() {
+      todos.remove(todo);
+    });
+    todoRepository.saveTodoList(todos);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Tarefa ${todo.title} foi removida com sucesso!',
+          style: TextStyle(color: Colors.black),
+        ),
+        backgroundColor: Colors.white,
+        action: SnackBarAction(
+          label: 'Desfazer',
+          textColor: Colors.purple,
+          onPressed: () {
+            setState(() {
+              todos.insert(deletedTodoPos!, deletedTodo!);
+            });
+            todoRepository.saveTodoList(todos);
+          },
+        ),
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
+// Função para exibir um diálago de confirmação para limpar
+// as tarefas
+  void showDeleteTodoConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Limpar Tudo?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.purple,
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              deleteAllTodo();
+            },
+            child: Text(
+              'Limpar Tudo.',
+              style: TextStyle(
+                color: Colors.white,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.purple,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // função pra deletar todas tarefas
+  void deleteAllTodo(){
+    setState(() {
+      todos.clear();
+    });
+    todoRepository.saveTodoList(todos);
+  }
+
 }
